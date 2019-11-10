@@ -11,6 +11,7 @@ It prefers:
  * `config.${SERVICE_ENV}.json`
  * `config.default.json`
 
+The `${env_vars}` referenced above also have defaults:
 
  * `CONFIG_SECRET_FILE` defaults to `./config.secret.json`
  * `SERVICE_ENV` defaults to `local`
@@ -19,12 +20,12 @@ Loaded values are merged, e.g.
 
 `config.default.json`:
 ```json
-{"buy": {"potatoes":  5}}
+{"buy": {"potatoes": 5}}
 ```
 
 `config.secret.json`:
 ```json
-{"buy": {"condamns":  1}}
+{"buy": {"condamns": 1}}
 ```
 
 env:
@@ -35,5 +36,5 @@ export CONF_debug=true
 
 ..will result in:
 ```json
-{"buy": {"condamns": 7, "potatoes":  5}, "debug": true}
+{"buy": {"condamns": 7, "potatoes": 5}, "debug": true}
 ```
