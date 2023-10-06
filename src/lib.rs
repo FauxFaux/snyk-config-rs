@@ -3,8 +3,8 @@ use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use failure::{Error, Fail};
 use serde_json::{Map, Value};
+use thiserror::Error;
 
 mod from_env;
 mod from_file;
@@ -13,6 +13,7 @@ mod merge_sources;
 use merge_sources::merge_sources;
 
 pub type Json = Map<String, Value>;
+pub type Result<T> = std::result::Result<T, ConfigError>;
 
 pub struct Config {
     pub prefix: String,
@@ -37,29 +38,30 @@ impl Default for Config {
     }
 }
 
-#[derive(Debug, Fail)]
+#[derive(Debug, Error)]
 pub enum ConfigError {
-    #[fail(display = "invalid utf-8 in {:?}", key)]
-    InvalidEnvEncoding { key: String },
+    #[error("invalid utf-8 in {key:?}, got roughly {value:?}")]
+    InvalidEnvEncoding { key: String, value: String },
 
-    #[fail(display = "locating file failed: {:?} (in {:?})", path, cwd)]
+    #[error("locating file failed: {path:?} (in {cwd:?})")]
     ResolvePath {
+        source: io::Error,
         path: PathBuf,
         cwd: io::Result<PathBuf>,
     },
 
-    #[fail(display = "loading {:?}", path)]
-    LoadingFile { path: PathBuf },
+    #[error("open {path:?} failed")]
+    FileOpenFailed { source: io::Error, path: PathBuf },
 
-    #[fail(display = "open failed")]
-    FileOpenFailed,
-
-    #[fail(display = "invalid json")]
-    InvalidJson,
+    #[error("invalid json in  {path:?}")]
+    InvalidJson {
+        source: serde_json::Error,
+        path: PathBuf,
+    },
 }
 
 impl Config {
-    pub fn for_prefix<S: ToString>(prefix: S) -> Result<Json, Error> {
+    pub fn for_prefix<S: ToString>(prefix: S) -> Result<Json> {
         Config {
             prefix: prefix.to_string(),
             ..Default::default()
@@ -67,7 +69,7 @@ impl Config {
         .load()
     }
 
-    pub fn for_dir<P: AsRef<Path>>(dir: P) -> Result<Json, Error> {
+    pub fn for_dir<P: AsRef<Path>>(dir: P) -> Result<Json> {
         Config {
             dir: dir.as_ref().to_path_buf(),
             secrets_file: join(
@@ -79,7 +81,7 @@ impl Config {
         .load()
     }
 
-    pub fn load(self) -> Result<Json, Error> {
+    pub fn load(self) -> Result<Json> {
         let default = from_file::load(join(
             self.dir.to_path_buf(),
             &OsString::from("config.default.json"),

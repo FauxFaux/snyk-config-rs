@@ -2,23 +2,22 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
-use failure::{Error, ResultExt};
 use serde_json::Value;
 
-use super::ConfigError;
+use super::{ConfigError, Result};
 
-pub fn load(path: PathBuf) -> Result<Value, Error> {
+pub fn load(path: PathBuf) -> Result<Value> {
     let path = path
         .canonicalize()
-        .with_context(|_| ConfigError::ResolvePath {
+        .map_err(|source| ConfigError::ResolvePath {
+            source,
             path,
             cwd: env::current_dir(),
         })?;
 
-    Ok(actual_load(&path).with_context(|_| ConfigError::LoadingFile { path })?)
-}
-
-fn actual_load(path: &PathBuf) -> Result<Value, Error> {
-    let file = fs::read(&path).with_context(|_| ConfigError::FileOpenFailed)?;
-    Ok(serde_json::from_slice(&file).with_context(|_| ConfigError::InvalidJson)?)
+    let file = fs::read(&path).map_err(|source| ConfigError::FileOpenFailed {
+        source,
+        path: path.to_path_buf(),
+    })?;
+    serde_json::from_slice(&file).map_err(|source| ConfigError::InvalidJson { source, path })
 }

@@ -1,11 +1,10 @@
 use std::env;
 
-use failure::Error;
 use serde_json::{json, Value};
 
-use super::{ConfigError, Json};
+use super::{ConfigError, Json, Result};
 
-pub fn from_env(prefix: &str) -> Result<Json, Error> {
+pub fn from_env(prefix: &str) -> Result<Json> {
     let mut map = Json::new();
 
     for (key, value) in env::vars_os() {
@@ -20,6 +19,7 @@ pub fn from_env(prefix: &str) -> Result<Json, Error> {
             .to_str()
             .ok_or_else(|| ConfigError::InvalidEnvEncoding {
                 key: key.to_string(),
+                value: value.to_string_lossy().into_owned(),
             })?;
 
         let value = attempt_parse(value);

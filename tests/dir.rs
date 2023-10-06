@@ -1,12 +1,11 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use anyhow::Result;
 use serde_json::json;
 
-use failure::Error;
-
 #[test]
-fn example() -> Result<(), Error> {
+fn example() -> Result<()> {
     let dir = tempfile::tempdir()?;
     fs::write(
         join(dir.path(), "config.default.json"),
