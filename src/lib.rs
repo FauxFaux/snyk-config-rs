@@ -70,7 +70,10 @@ impl Config {
     pub fn for_dir<P: AsRef<Path>>(dir: P) -> Result<Json, Error> {
         Config {
             dir: dir.as_ref().to_path_buf(),
-            secrets_file: join(dir.as_ref().to_path_buf(), &OsString::from("config.secret.json")),
+            secrets_file: join(
+                dir.as_ref().to_path_buf(),
+                &OsString::from("config.secret.json"),
+            ),
             ..Default::default()
         }
         .load()
